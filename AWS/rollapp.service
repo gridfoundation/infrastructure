@@ -1,0 +1,13 @@
+[Unit]
+Description="Rollapp Service"
+After=network.target
+[Service]
+EnvironmentFile=/home/ubuntu/code/rollapp.env
+Type=simple
+LimitNOFILE=4096
+Restart=always
+RestartSec=5
+User=ubuntu
+ExecStart=/bin/bash /home/ubuntu/code/gridiron-rdk/scripts/run_rollapp.sh
+[Install]
+WantedBy=multi-user.target

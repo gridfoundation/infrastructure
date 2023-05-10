@@ -1,0 +1,17 @@
+{
+  "type": "cosmos",
+  "value": {
+    "key": "hub-key",
+    "chain-id": "hub",
+    "rpc-addr": "tcp://",
+    "account-prefix": "fury",
+    "keyring-backend": "test",
+    "gas-adjustment": 1.2,
+    "gas-prices": "0.0000025ufury",
+    "debug": true,
+    "timeout": "10s",
+    "output-format": "json",
+    "sign-mode": "direct",
+    "client-type": "07-tendermint"
+  }
+}

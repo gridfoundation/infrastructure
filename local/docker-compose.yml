@@ -1,0 +1,186 @@
+version: "3.9"
+services:
+
+  hub-validator-1:
+    container_name: hub-validator-1
+    image: ghcr.io/gridfoundation/gridiron:latest
+    ports:
+      - "26657:26657"
+      - "1317:1317"
+      - "9090:9090"
+    environment:
+      - MONIKER_NAME=hub-validator-1
+      - IS_GENESIS_VALIDATOR=true # only set this to true for one validator which is in charge of creating the genesis file
+      - VALIDATOR_COUNT=2
+      - NUM_ADDRESSES_TO_FUND=4
+      - CHAIN_ID=hub
+    volumes:
+      - hub:/home/shared
+      - ./hub-entrypoint.sh:/hub-entrypoint.sh
+    entrypoint: sh -c /hub-entrypoint.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:26657"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  hub-validator-2:
+    container_name: hub-validator-2
+    image: ghcr.io/gridfoundation/gridiron:latest
+    ports:
+      - "26658:26657"
+      - "1318:1317"
+      - "9091:9090"
+    environment:
+      - MONIKER_NAME=hub-validator-2
+      - VALIDATOR_COUNT=2
+      - CHAIN_ID=hub
+    volumes:
+      - hub:/home/shared
+      - ./hub-entrypoint.sh:/hub-entrypoint.sh
+    entrypoint: sh -c /hub-entrypoint.sh
+
+  rollapp-a-sequencer:
+    container_name: rollapp-a-sequencer
+    image: ghcr.io/gridfoundation/gridiron-rdk:latest
+    ports:
+      - "26659:26657"
+      - "1319:1317"
+      - "9092:9090"
+    environment:
+      - MONIKER_NAME=rollapp-a-sequencer
+      - CHAIN_ID=rollapp-a # this is the chain id of the rollup chain
+      - ROLLAPP_ID=rollapp-a # this is the rollapp id in the hub chain
+      - IS_GENESIS_SEQUENCER=true # only set this to true for one sequencer which is in charge of creating the genesis file
+      - NODE_COUNT=2
+      - AGGREGATOR=true
+      - NUM_ADDRESSES_TO_FUND=1
+      - SETTLEMENT_LAYER=gridiron
+      - SETTLEMENT_RPC=hub-validator-1:26657
+      - HUB_CHAIN_ID=hub
+      - KEY_NAME_FURY=fury-user
+      - BATCH_SIZE=15
+      - BLOCK_TIME=2s
+      - DA_LAYER=celestia
+      - DA_LC_ENDPOINT=3.88.163.116:26659
+      - DA_NAMESPACE_ID=[1,2,3,4,5,6,255,255]
+    volumes:
+      - hub:/home/hub
+      - rollapp-a:/home/shared
+      - ./rollapp-entrypoint.sh:/rollapp-entrypoint.sh
+    entrypoint: bash -c /rollapp-entrypoint.sh
+
+  rollapp-a-full-node:
+    container_name: rollapp-a-full-node
+    image: ghcr.io/gridfoundation/gridiron-rdk:latest
+    ports:
+      - "26660:26657"
+      - "1320:1317"
+      - "9093:9090"
+    environment:
+      - MONIKER_NAME=rollapp-a-full-node
+      - CHAIN_ID=rollapp-a # this is the chain id of the rollup chain
+      - ROLLAPP_ID=rollapp-a # this is the rollapp id in the hub chain
+      - IS_GENESIS_SEQUENCER=false # only set this to true for one sequencer which is in charge of creating the genesis file
+      - NODE_COUNT=2
+      - AGGREGATOR=false
+      - SETTLEMENT_LAYER=gridiron
+      - SETTLEMENT_RPC=hub-validator-1:26657
+      - DA_LAYER=celestia
+      - DA_LC_ENDPOINT=3.88.163.116:26659
+      - DA_NAMESPACE_ID=[1,2,3,4,5,6,255,255]
+    volumes:
+      - rollapp-a:/home/shared
+      - ./rollapp-entrypoint.sh:/rollapp-entrypoint.sh
+    entrypoint: bash -c /rollapp-entrypoint.sh
+
+  relayer-a:
+    container_name: relayer-a
+    image: ghcr.io/gridfoundation/relayer:latest
+    volumes:
+      - hub:/home/hub
+      - rollapp-a:/home/rollapp-a
+      - ./relayer:/home/relayer
+    environment:
+      - ROLLAPP_CHAIN_ID=rollapp-a
+      - HUB_CHAIN_ID=hub
+      - ROLLAPP_RPC=rollapp-a-sequencer:26657
+      - HUB_RPC=hub-validator-1:26657
+    user: root
+    ports:
+      - "7597:7597"
+    entrypoint: bash -c /home/relayer/entrypoint.sh
+
+  rollapp-b-sequencer:
+    container_name: rollapp-b-sequencer
+    image: ghcr.io/gridfoundation/gridiron-rdk:latest
+    ports:
+      - "26661:26657"
+      - "1321:1317"
+      - "9094:9090"
+    environment:
+      - MONIKER_NAME=rollapp-b-sequencer
+      - CHAIN_ID=rollapp-b # this is the chain id of the rollup chain
+      - ROLLAPP_ID=rollapp-b # this is the rollapp id in the hub chain
+      - IS_GENESIS_SEQUENCER=true # only set this to true for one sequencer which is in charge of creating the genesis file
+      - NODE_COUNT=2
+      - AGGREGATOR=true
+      - SETTLEMENT_LAYER=gridiron
+      - SETTLEMENT_RPC=hub-validator-1:26657
+      - HUB_CHAIN_ID=hub
+      - NUM_ADDRESSES_TO_FUND=0
+      - KEY_NAME_FURY=fury-user
+      - BATCH_SIZE=15
+      - BLOCK_TIME=2s
+      - DA_LAYER=celestia
+      - DA_LC_ENDPOINT=3.93.167.114:26659
+      - DA_NAMESPACE_ID=[2,2,3,4,5,6,255,255]
+    volumes:
+      - hub:/home/hub
+      - rollapp-b:/home/shared
+      - ./rollapp-entrypoint.sh:/rollapp-entrypoint.sh
+    entrypoint: bash -c /rollapp-entrypoint.sh
+
+  rollapp-b-full-node:
+    container_name: rollapp-b-full-node
+    image: ghcr.io/gridfoundation/gridiron-rdk:latest
+    ports:
+      - "26662:26657"
+      - "1322:1317"
+      - "9095:9090"
+    environment:
+      - MONIKER_NAME=rollapp-b-full-node
+      - CHAIN_ID=rollapp-b # this is the chain id of the rollup chain
+      - ROLLAPP_ID=rollapp-b # this is the rollapp id in the hub chain
+      - IS_GENESIS_SEQUENCER=false # only set this to true for one sequencer which is in charge of creating the genesis file
+      - NODE_COUNT=2
+      - AGGREGATOR=false
+      - SETTLEMENT_LAYER=gridiron
+      - SETTLEMENT_RPC=hub-validator-1:26657
+      - DA_LAYER=celestia
+      - DA_LC_ENDPOINT=3.93.167.114:26659
+      - DA_NAMESPACE_ID=[2,2,3,4,5,6,255,255]
+    volumes:
+      - rollapp-b:/home/shared
+      - ./rollapp-entrypoint.sh:/rollapp-entrypoint.sh
+    entrypoint: bash -c /rollapp-entrypoint.sh
+
+  # celestia-light-node:
+  #   container_name: celestia-light-node
+  #   image: ghcr.io/gridfoundation/dockers/celestia-light-client:v0.6.2
+  #   ports:
+  #     - "26659:26659"
+  #     - "9099:9090"
+  #   volumes:
+  #     - ./celestia-light-client.pk:/celestia-light-client.pk
+  #     - ./cld-entrypoint.sh:/cld-entrypoint.sh
+  #   entrypoint: /bin/sh -c /cld-entrypoint.sh
+  #   # Increase the number of open files otherwise the light client will crash due to too many open files (p2p conenctions)
+  #   ulimits:
+  #     nproc: 65535
+
+volumes:
+  hub:
+  rollapp-a:
+  rollapp-b:

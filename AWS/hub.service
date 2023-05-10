@@ -1,0 +1,12 @@
+[Unit]
+After=network.target
+[Service]
+EnvironmentFile=/home/ubuntu/code/hub.env
+Type=simple
+Restart=always
+RestartSec=1
+LimitNOFILE=4096
+User=ubuntu
+ExecStart=/bin/bash /home/ubuntu/code/gridiron/scripts/run_gridiron.sh
+[Install]
+WantedBy=multi-user.target

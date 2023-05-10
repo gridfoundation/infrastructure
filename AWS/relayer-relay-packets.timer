@@ -1,0 +1,10 @@
+[Unit]
+Description=Run my-timer.service every 30 sec
+
+[Timer]
+OnBootSec=0
+OnUnitActiveSec=30sec
+Unit=relayer-relay-packets.service
+
+[Install]
+WantedBy=timers.target

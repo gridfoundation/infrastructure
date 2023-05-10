@@ -1,0 +1,12 @@
+[Unit]
+Description="Relayer Service"
+After=network.target
+[Service]
+EnvironmentFile=/home/ubuntu/code/relayer.env
+Type=simple
+Restart=always
+RestartSec=5
+User=ubuntu
+ExecStart=/home/ubuntu/go/bin/rly start "$RELAYER_PATH" -l 1
+[Install]
+WantedBy=multi-user.target

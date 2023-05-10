@@ -1,0 +1,10 @@
+[Unit]
+Description=Run relayer-update-clients.service every 1 minute
+
+[Timer]
+OnBootSec=0
+OnUnitActiveSec=1min
+Unit=relayer-update-clients.service
+
+[Install]
+WantedBy=timers.target

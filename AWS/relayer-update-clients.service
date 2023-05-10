@@ -1,0 +1,10 @@
+[Unit]
+Description="Relayer update client Service"
+After=network.target
+[Service]
+EnvironmentFile=/home/ubuntu/code/relayer.env
+Type=oneshot
+User=ubuntu
+ExecStart=/home/ubuntu/go/bin/rly tx update-clients $RELAYER_PATH
+[Install]
+WantedBy=multi-user.target
